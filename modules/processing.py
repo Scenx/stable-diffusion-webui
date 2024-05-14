@@ -910,6 +910,7 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
 
     infotexts = []
     output_images = []
+    output_url_images = []
     with torch.no_grad(), p.sd_model.ema_scope():
         with devices.autocast():
             p.init(p.all_prompts, p.all_seeds, p.all_subseeds)
@@ -1073,29 +1074,29 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
                     image = pp.image
 
                 if save_samples:
-                    images.save_image(image, p.outpath_samples, "", p.seeds[i], p.prompts[i], opts.samples_format, info=infotext(i), p=p)
+                    fullfn, _ = images.save_image(image, p.outpath_samples, "", p.seeds[i], p.prompts[i], opts.samples_format, info=infotext(i), p=p)
 
                 text = infotext(i)
                 infotexts.append(text)
                 if opts.enable_pnginfo:
                     image.info["parameters"] = text
                 output_images.append(image)
-
+                output_url_images.append(fullfn)
                 if mask_for_overlay is not None:
                     if opts.return_mask or opts.save_mask:
                         image_mask = mask_for_overlay.convert('RGB')
                         if save_samples and opts.save_mask:
-                            images.save_image(image_mask, p.outpath_samples, "", p.seeds[i], p.prompts[i], opts.samples_format, info=infotext(i), p=p, suffix="-mask")
+                            fullfn, _ = images.save_image(image_mask, p.outpath_samples, "", p.seeds[i], p.prompts[i], opts.samples_format, info=infotext(i), p=p, suffix="-mask")
                         if opts.return_mask:
                             output_images.append(image_mask)
-
+                            output_url_images.append(fullfn)
                     if opts.return_mask_composite or opts.save_mask_composite:
                         image_mask_composite = Image.composite(original_denoised_image.convert('RGBA').convert('RGBa'), Image.new('RGBa', image.size), images.resize_image(2, mask_for_overlay, image.width, image.height).convert('L')).convert('RGBA')
                         if save_samples and opts.save_mask_composite:
-                            images.save_image(image_mask_composite, p.outpath_samples, "", p.seeds[i], p.prompts[i], opts.samples_format, info=infotext(i), p=p, suffix="-mask-composite")
+                            fullfn, _ = images.save_image(image_mask_composite, p.outpath_samples, "", p.seeds[i], p.prompts[i], opts.samples_format, info=infotext(i), p=p, suffix="-mask-composite")
                         if opts.return_mask_composite:
                             output_images.append(image_mask_composite)
-
+                            output_url_images.append(fullfn)
             del x_samples_ddim
 
             devices.torch_gc()
@@ -1137,7 +1138,8 @@ def process_images_inner(p: StableDiffusionProcessing) -> Processed:
 
     if p.scripts is not None:
         p.scripts.postprocess(p, res)
-
+    res.images_url_list = output_url_images
+    print("Image saved at processing.py-1141 line :", res.images_url_list)
     return res
 
 

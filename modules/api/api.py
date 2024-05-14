@@ -476,14 +476,14 @@ class Api:
                     else:
                         p.script_args = tuple(script_args) # Need to pass args as tuple here
                         processed = process_images(p)
+                        print("Image saved at api.py-479:", processed.images_url_list)
                     finish_task(task_id)
                 finally:
                     shared.state.end()
                     shared.total_tqdm.clear()
 
-        b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
-
-        return models.TextToImageResponse(images=b64images, parameters=vars(txt2imgreq), info=processed.js())
+        # b64images = list(map(encode_pil_to_base64, processed.images)) if send_images else []
+        return models.TextToImageResponse(images=processed.images_url_list, parameters=vars(txt2imgreq), info=processed.js())
 
     def img2imgapi(self, img2imgreq: models.StableDiffusionImg2ImgProcessingAPI):
         task_id = img2imgreq.force_task_id or create_task_id("img2img")
